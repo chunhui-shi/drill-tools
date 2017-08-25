@@ -1,0 +1,14 @@
+[MapRSI]
+name = MapR Core Components
+baseurl = http://yum.qa.lab/mapr/
+gpgcheck = 0
+enabled = 1
+protected = 1
+
+[MapRSI_Eco]
+name = MapR Ecosystem Components
+baseurl = http://yum.qa.lab/opensource
+gpgcheck = 0
+enabled = 1
+protected = 1
+

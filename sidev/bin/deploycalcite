@@ -1,0 +1,20 @@
+#!/bin/bash
+
+echo $#
+if [ $# -eq 1 ]; then
+    HOST=$1
+else 
+    HOST=10.10.88.128
+fi
+
+if [ "$DRILL_VER" == "" ]; then
+  DRILL_VER=1.9.0_delayDFS
+fi
+
+DRILL_DIR=/opt/mapr/drill/drill-$DRILL_VER
+ssh root@$HOST "mv $DRILL_DIR/jars/3rdparty/calcite-*.jar /tmp"
+scp $(find -name calcite-avatica-1.4.0-drill-r??.jar) root@$HOST:$DRILL_DIR/jars/3rdparty
+scp $(find -name calcite-linq4j-1.4.0-drill-r??.jar) root@$HOST:$DRILL_DIR/jars/3rdparty
+scp $(find -name calcite-core-1.4.0-drill-r??.jar) root@$HOST:$DRILL_DIR/jars/3rdparty
+
+ssh root@$HOST "$DRILL_DIR/bin/drillbit.sh restart"

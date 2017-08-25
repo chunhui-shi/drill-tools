@@ -1,0 +1,22 @@
+#!/bin/bash
+MVN=$(which mvn)
+
+
+LOCAL_HOST=`ip addr show |grep "inet " |grep -v 127.0.0. |head -1|cut -d" " -f6|cut -d/ -f1`
+
+if [ "X$BUILD_DIR" == "X" ]; then
+  echo "no build_directory specified, assume it is current directory"
+else
+  echo "enter $BUILD_DIR"
+  cd $BUILD_DIR
+fi
+
+if [ "$DRILL_VER" == "" ]; then
+  DRILL_VER=$(python -c 'from xml.etree.ElementTree import ElementTree; print ElementTree(file="pom.xml").findtext("{http://maven.apache.org/POM/4.0.0}version")')
+  #DRILL_VER=1.9.0
+fi
+
+
+  cp -f distribution/target/apache-drill-$DRILL_VER.tar.gz /tmp
+  DRILL_VER=$DRILL_VER deploydrill.sh
+

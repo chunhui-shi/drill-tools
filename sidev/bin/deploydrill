@@ -1,0 +1,34 @@
+#!/bin/bash
+
+if [ $# -eq 1 ]; then
+    HOST=$1
+else 
+    HOST=10.10.88.128
+fi
+
+tarfiles="distribution/target/apache-drill*.tar.gz"
+if ! ls $tarfiles > /dev/null 2>&1; then
+   echo "No tarball to deploy! You are not in root directory of Drill source code or build failed."
+   exit 1
+fi
+
+if [ "$DRILL_VER" == "" ]; then
+  DRILL_VER=$(python -c 'from xml.etree.ElementTree import ElementTree; print ElementTree(file="pom.xml").findtext("{http://maven.apache.org/POM/4.0.0}version")')
+  #DRILL_VER=1.9.0
+fi
+
+LOCAL_HOST=`LANG=c ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`
+
+if [ "$HOST" == "$LOCAL_HOST" ]; then
+  cp -f distribution/target/apache-drill-$DRILL_VER.tar.gz /tmp
+  mkdir -p /opt/test/hbase/com/mapr/drill/maprdb/tests/index
+  cp -f ./contrib/format-maprdb/target/test-classes/com/mapr/drill/maprdb/tests/index/* /opt/test/hbase/com/mapr/drill/maprdb/tests/index/
+  /opt/test/deploydrill.sh
+
+else
+  scp distribution/target/apache-drill-$DRILL_VER.tar.gz root@$HOST:/tmp
+  scp ./contrib/format-maprdb/target/test-classes/com/mapr/drill/maprdb/tests/index/* root@$HOST:/opt/test/hbase/com/mapr/drill/maprdb/tests/index/
+  scp ~/bin/deploydrill.sh root@$HOST:/opt/test
+  ssh root@$HOST "DRILL_VER=$DRILL_VER /opt/test/deploydrill.sh"
+fi
+

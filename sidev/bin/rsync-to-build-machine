@@ -1,0 +1,29 @@
+#!/bin/bash
+# This script is expected to run under drill source code's root directory
+if [ $# -ge 1 ]; then
+    HOST=$1
+else
+    HOST=10.10.88.128
+    #`LANG=c ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`
+fi
+
+if [ $# -ge 2 ]; then
+   BUILD_HOST=$2
+else
+   BUILD_HOST=$HOST
+fi
+
+BUILD_DIR_PREFIX=""
+BUILD_DIR=/home/opt/dev/work/drill
+
+grep "Apache Drill Root POM" pom.xml &>/dev/null
+if [ $? -ne 0 ]; then
+  echo "The script is not run at root directory of Drill source code? Exit without moving further."
+  exit 0
+fi
+date
+rsync -arvz --stats --delete-after --include "DrillUDF*.jar" --exclude "*.class" --exclude "*.jar" --exclude "*.tar.gz" --exclude="*test/generated*" --exclude="*/target/*" $(pwd) root@$BUILD_HOST:$BUILD_DIR > /tmp/rsync.log
+date
+#ssh root@$BUILD_HOST "cd $BUILD_DIR; mvn clean install -DskipTests -Pmapr &>/tmp/mvn.log &"
+
+

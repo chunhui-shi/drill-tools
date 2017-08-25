@@ -1,0 +1,48 @@
+#!/bin/bash
+MVN=$(which mvn)
+
+if [ $# -ge 1 ]; then
+    HOST=$1
+else 
+    HOST=10.10.88.128
+fi
+if [ $# -eq 2 ]; then
+  BUILD_DIR=$2
+fi
+
+LOCAL_HOST=$HOST
+#`LANG=c ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`
+if [ "X$BUILD_DIR" == "X" ]; then
+  echo "no build_directory specified, assume it is current directory"
+else
+  echo "enter $BUILD_DIR"
+  cd $BUILD_DIR
+fi
+
+if [ "$DRILL_VER" == "" ]; then
+  DRILL_VER=$(python -c 'from xml.etree.ElementTree import ElementTree; print ElementTree(file="pom.xml").findtext("{http://maven.apache.org/POM/4.0.0}version")')
+  #DRILL_VER=1.9.0
+fi
+
+$MVN install -DskipTests -Pmapr &>/tmp/mvn.log  
+
+tail /tmp/mvn.log | grep "ERROR"
+if [ $? -eq 0 ]; then
+  exit 1
+fi
+
+if [ "$HOST" == "$LOCAL_HOST" ]; then
+  #if build and deloy on localhost, we assume all scripts are here at right places
+  cp -f distribution/target/apache-drill-$DRILL_VER.tar.gz /tmp
+  mkdir -p /opt/test/hbase/com/mapr/drill/maprdb/tests/index/
+  cp -f ./contrib/format-maprdb/target/test-classes/com/mapr/drill/maprdb/tests/index/* /opt/test/hbase/com/mapr/drill/maprdb/tests/index/
+#  cp ~/bin/deploydrill.sh root@$HOST:/opt/test
+  DRILL_VER=$DRILL_VER /opt/test/deploydrill.sh
+
+else
+
+  scp distribution/target/apache-drill-$DRILL_VER.tar.gz root@$HOST:/tmp
+  scp ./contrib/format-maprdb/target/test-classes/com/mapr/drill/maprdb/tests/index/* root@$HOST:/opt/test/hbase/com/mapr/drill/maprdb/tests/index/
+  scp ~/bin/deploydrill.sh root@$HOST:/opt/test
+  ssh root@$HOST "DRILL_VER=$DRILL_VER /opt/test/deploydrill.sh"
+fi

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+echo $#
+if [ $# -eq 1 ]; then
+    HOST=$1
+else 
+    HOST=10.10.88.128
+fi
+
+if [ "$DRILL_VER" == "" ]; then
+  DRILL_VER=$(python -c 'from xml.etree.ElementTree import ElementTree; print ElementTree(file="pom.xml").findtext("{http://maven.apache.org/POM/4.0.0}version")')
+  #DRILL_VER=1.9.0
+fi
+
+scp distribution/target/apache-drill-$DRILL_VER.tar.gz root@$HOST:/tmp
+
+CALCITE_DIR=/home/shi/dev/mapr/incubator-calcite
+scp $(find $CALCITE_DIR -name calcite-avatica-1.4.0-drill-r??.jar) root@$HOST:/opt/test
+scp $(find $CALCITE_DIR -name calcite-linq4j-1.4.0-drill-r??.jar) root@$HOST:/opt/test
+scp $(find $CALCITE_DIR -name calcite-core-1.4.0-drill-r??.jar) root@$HOST:/opt/test
+
+scp ~/bin/deploydrill-calcite.sh root@$HOST:/opt/test
+ssh root@$HOST "DRILL_VER=$DRILL_VER /opt/test/deploydrill-calcite.sh"
